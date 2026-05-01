@@ -86,7 +86,7 @@ Please generate the Ranked Resistance Report now.
 """
 
     model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
+        model_name="gemini-2.0-flash",
         generation_config=genai.GenerationConfig(
             temperature=0.1,
             max_output_tokens=1500,
