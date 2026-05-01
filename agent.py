@@ -2,10 +2,6 @@ import json
 import streamlit as st
 from openai import OpenAI
 
-# Securely initialize the OpenAI client using Streamlit's secrets manager.
-# The API key is never hardcoded or exposed in the source code.
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-
 
 def load_knowledge() -> dict:
     """
@@ -23,13 +19,13 @@ def generate_inference(patient_input: str) -> str:
     Core reasoning function. Accepts a free-text patient genomic profile,
     injects it alongside the full knowledge base into a structured prompt,
     and returns a Ranked Resistance Report from gpt-4o.
-
-    Args:
-        patient_input: Free-text description of the patient's genomic profile.
-
-    Returns:
-        A structured, cited clinical hypothesis report as a string.
     """
+
+    # ✅ FIX: Initialize the client HERE (inside the function), not at module
+    # level. This ensures st.secrets is only accessed after Streamlit has
+    # fully loaded, preventing the startup crash.
+    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
     kb = load_knowledge()
 
     system_prompt = """
@@ -67,9 +63,9 @@ This report is a **hypothesis-generation tool only**. It does not constitute a d
 ---
 
 ## CONFIDENCE SCORING RUBRIC
-- **90–100%:** Patient input directly and unambiguously matches a knowledge base entry (gene + alteration both present).
-- **70–89%:** Patient input strongly suggests a match but uses synonymous terminology or implied findings.
-- **50–69%:** Partial or indirect match; knowledge base entry is plausible but not certain.
+- **90-100%:** Patient input directly and unambiguously matches a knowledge base entry (gene + alteration both present).
+- **70-89%:** Patient input strongly suggests a match but uses synonymous terminology or implied findings.
+- **50-69%:** Partial or indirect match; knowledge base entry is plausible but not certain.
 - **< 50%:** Do not report. State that no reliable match was found.
 
 ## CRITICAL GUARDRAILS (NON-NEGOTIABLE)
@@ -92,7 +88,7 @@ Please generate the Ranked Resistance Report now.
 
     response = client.chat.completions.create(
         model="gpt-4o",
-        temperature=0.1,  # Low temperature enforces factual, reproducible outputs over creative generation
+        temperature=0.1,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
