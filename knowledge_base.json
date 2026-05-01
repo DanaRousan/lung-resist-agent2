@@ -1,0 +1,38 @@
+{
+  "EGFR_PACC": {
+    "gene": "EGFR",
+    "alteration": "PACC mutations (P-loop and αC-helix compressing)",
+    "mechanism": "Atypical structural alterations in the kinase domain lead to variable and often reduced binding affinity for first-, second-, and third-generation TKIs. These mutations compress the ATP-binding pocket in a distinct configuration not targeted by standard osimertinib.",
+    "drug_sensitivity": "Resistant to standard TKIs; may respond to 4th-generation allosteric inhibitors.",
+    "trial_recommendation": "Firmonertinib (AST2818)",
+    "clinical_trial": "FURTHER Trial (Global, Randomized Phase III)",
+    "trial_rationale": "Firmonertinib demonstrates preclinical and early clinical activity against PACC mutations due to its unique binding conformation.",
+    "biomarkers_to_monitor": ["EGFR exon 20", "P-loop residues (G719, S768)", "αC-helix residues (E746, L747)"],
+    "evidence_level": "Phase III Trial — High Confidence",
+    "citation": "Le X, et al. FURTHER: A Global, Randomized Study of Firmonertinib vs. Chemotherapy in EGFR PACC Mutation-Positive NSCLC. ASCO 2024."
+  },
+  "HER2_ADC_Resistance": {
+    "gene": "HER2",
+    "alteration": "SLFN11 loss or ABCC1 (MRP1) gain",
+    "mechanism": "Antibody-Drug Conjugate (ADC) payload resistance: SLFN11 loss impairs DNA damage response to the DXd topoisomerase I inhibitor payload, while ABCC1 gain drives active efflux of the cytotoxic payload from tumor cells. Critically, the HER2 receptor itself and downstream kinase activity remain intact and actionable.",
+    "drug_sensitivity": "Resistant to T-DXd (trastuzumab deruxtecan) payload; tumor remains sensitive to HER2 kinase inhibition.",
+    "trial_recommendation": "Sevabertinib (a selective HER2 TKI)",
+    "clinical_trial": "SOHO-02 Trial",
+    "trial_rationale": "Bypasses the ADC resistance mechanism entirely by directly targeting the preserved HER2 kinase activity rather than relying on cytotoxic payload delivery.",
+    "biomarkers_to_monitor": ["SLFN11 IHC/NGS", "ABCC1 expression", "HER2 copy number", "HER2 kinase domain mutations"],
+    "evidence_level": "Phase II Trial — Moderate-High Confidence",
+    "citation": "Le X, et al. First Comprehensive Investigation of ADC Resistance Mechanisms in Lung Cancer. JTO 2024."
+  },
+  "MET_Amplification": {
+    "gene": "MET",
+    "alteration": "High-level amplification (MET/CEP7 ratio ≥ 5 or copy number ≥ 10)",
+    "mechanism": "MET amplification constitutes a bypass track resistance mechanism to EGFR TKI therapy. Amplified MET activates PI3K/AKT and RAS/MAPK signaling independently of EGFR, rendering EGFR inhibition insufficient as a monotherapy. This is one of the most common acquired resistance mechanisms to osimertinib (~15% of cases).",
+    "drug_sensitivity": "Resistant to EGFR TKI monotherapy; responds to combined EGFR + MET co-inhibition.",
+    "trial_recommendation": "Osimertinib + Savolitinib or Tepotinib (MET inhibitor)",
+    "clinical_trial": "INSIGHT-2 Trial / ORCHARD Trial (MET cohort)",
+    "trial_rationale": "Dual blockade of both the EGFR pathway (osimertinib) and the MET bypass track simultaneously overcomes the resistance mechanism.",
+    "biomarkers_to_monitor": ["MET FISH (gene copy number)", "MET IHC (protein expression)", "MET exon 14 skipping", "EGFR T790M co-mutation status"],
+    "evidence_level": "Phase II Trial — Moderate-High Confidence",
+    "citation": "Sequist LV, et al. INSIGHT-2: Osimertinib plus Savolitinib in EGFR-mutated, MET-amplified NSCLC post-Osimertinib Resistance. NEJM 2023."
+  }
+}
