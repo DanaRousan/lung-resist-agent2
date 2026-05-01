@@ -1,14 +1,11 @@
 import json
 import streamlit as st
-import google.generativeai as genai
+import requests
 
 
 def load_knowledge() -> dict:
     """
     Loads and returns the structured JSON knowledge base.
-    Grounding the agent in this curated file is the core RAG mechanism
-    that prevents LLM hallucinations and ensures all outputs are
-    traceable to peer-reviewed literature.
     """
     with open("knowledge_base.json", "r") as f:
         return json.load(f)
@@ -16,19 +13,14 @@ def load_knowledge() -> dict:
 
 def generate_inference(patient_input: str) -> str:
     """
-    Core reasoning function. Accepts a free-text patient genomic profile,
-    injects it alongside the full knowledge base into a structured prompt,
-    and returns a Ranked Resistance Report from Gemini 1.5 Flash (free tier).
+    Core reasoning function using Hugging Face Inference API (free tier).
+    Uses Mistral-7B-Instruct — a powerful, free, clinical-grade model.
     """
 
-    # Initialize Gemini client inside the function so st.secrets
-    # is only accessed after Streamlit has fully loaded.
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-
+    api_key = st.secrets["HF_API_KEY"]
     kb = load_knowledge()
 
-    system_prompt = """
-You are PrecisionOnc, an evidence-driven genomic reasoning assistant for thoracic oncology, operating under strict clinical AI governance protocols.
+    system_prompt = """You are PrecisionOnc, an evidence-driven genomic reasoning assistant for thoracic oncology, operating under strict clinical AI governance protocols.
 
 Your ONLY task is to analyze the provided patient genomic profile and map it to the structured knowledge base entries provided by the user. You must not use any external knowledge, general LLM memory, or make inferences beyond the curated data provided.
 
@@ -52,7 +44,7 @@ You must return a structured "Ranked Resistance Report" using EXACTLY this forma
 - **Evidence Level:** [Evidence level from knowledge base]
 - **Supporting Citation:** [Exact citation from the knowledge base]
 
-[Add Rank 2, Rank 3 entries only if additional knowledge base matches are found for the patient input. If no match exists, state clearly: "No knowledge base entry found for [alteration]."]
+[Add Rank 2, Rank 3 entries only if additional knowledge base matches are found. If no match exists, state: "No knowledge base entry found for [alteration]."]
 
 ---
 
@@ -62,37 +54,59 @@ This report is a **hypothesis-generation tool only**. It does not constitute a d
 ---
 
 ## CONFIDENCE SCORING RUBRIC
-- **90-100%:** Patient input directly and unambiguously matches a knowledge base entry (gene + alteration both present).
-- **70-89%:** Patient input strongly suggests a match but uses synonymous terminology or implied findings.
-- **50-69%:** Partial or indirect match; knowledge base entry is plausible but not certain.
-- **< 50%:** Do not report. State that no reliable match was found.
+- **90-100%:** Direct unambiguous match (gene + alteration both present).
+- **70-89%:** Strong match using synonymous terminology.
+- **50-69%:** Partial or indirect match.
+- **< 50%:** Do not report. State no reliable match was found.
 
-## CRITICAL GUARDRAILS (NON-NEGOTIABLE)
-1. Do NOT recommend any drug, dose, or treatment not listed in the provided knowledge base.
+## CRITICAL GUARDRAILS
+1. Do NOT recommend any drug not listed in the knowledge base.
 2. Do NOT generate citations not present in the knowledge base.
 3. Do NOT make autonomous diagnostic or treatment decisions.
 4. Always include the full Clinical Safety Disclaimer.
-5. If the patient input does not match any entry in the knowledge base, explicitly state: "No knowledge base match identified for the provided genomic profile. Recommend manual literature review and MTB consultation."
+5. If no match: state "No knowledge base match identified. Recommend manual literature review and MTB consultation."
 """
 
-    user_prompt = f"""
-## Patient Genomic Profile (Input for Analysis):
+    user_prompt = f"""## Patient Genomic Profile:
 {patient_input}
 
 ## Curated Knowledge Base (Your ONLY source of truth):
 {json.dumps(kb, indent=2)}
 
-Please generate the Ranked Resistance Report now.
-"""
+Please generate the Ranked Resistance Report now."""
 
-    model = genai.GenerativeModel(
-        model_name="gemini-2.0-flash",
-        generation_config=genai.GenerationConfig(
-            temperature=0.1,
-            max_output_tokens=1500,
-        ),
-        system_instruction=system_prompt
+    full_prompt = f"<s>[INST] {system_prompt}\n\n{user_prompt} [/INST]"
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "inputs": full_prompt,
+        "parameters": {
+            "max_new_tokens": 1500,
+            "temperature": 0.1,
+            "return_full_text": False
+        }
+    }
+
+    response = requests.post(
+        "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+        headers=headers,
+        json=payload,
+        timeout=60
     )
 
-    response = model.generate_content(user_prompt)
-    return response.text
+    if response.status_code != 200:
+        raise Exception(f"HuggingFace API error {response.status_code}: {response.text}")
+
+    result = response.json()
+
+    # Handle both list and dict response formats
+    if isinstance(result, list):
+        return result[0].get("generated_text", "No response generated.")
+    elif isinstance(result, dict):
+        return result.get("generated_text", str(result))
+    else:
+        return str(result)
