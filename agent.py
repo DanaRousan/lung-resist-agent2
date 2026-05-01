@@ -4,9 +4,7 @@ import requests
 
 
 def load_knowledge() -> dict:
-    """
-    Loads and returns the structured JSON knowledge base.
-    """
+    """Loads the structured JSON knowledge base."""
     with open("knowledge_base.json", "r") as f:
         return json.load(f)
 
@@ -14,7 +12,7 @@ def load_knowledge() -> dict:
 def generate_inference(patient_input: str) -> str:
     """
     Core reasoning function using Hugging Face Inference API (free tier).
-    Uses Mistral-7B-Instruct — a powerful, free, clinical-grade model.
+    Uses Mistral-7B-Instruct-v0.3.
     """
 
     api_key = st.secrets["HF_API_KEY"]
@@ -51,8 +49,6 @@ You must return a structured "Ranked Resistance Report" using EXACTLY this forma
 #### ⚠️ Clinical Safety Disclaimer
 This report is a **hypothesis-generation tool only**. It does not constitute a diagnosis, treatment decision, or medical order. All recommendations require review and validation by the attending physician and Molecular Tumor Board before any clinical action is taken. This system operates as a **Moderate Risk, Human-in-the-Loop advisory tool** in compliance with the DKITE Clinical AI Framework.
 
----
-
 ## CONFIDENCE SCORING RUBRIC
 - **90-100%:** Direct unambiguous match (gene + alteration both present).
 - **70-89%:** Strong match using synonymous terminology.
@@ -75,24 +71,24 @@ This report is a **hypothesis-generation tool only**. It does not constitute a d
 
 Please generate the Ranked Resistance Report now."""
 
-    full_prompt = f"<s>[INST] {system_prompt}\n\n{user_prompt} [/INST]"
-
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
 
+    # New HF Inference API format (v2) — works with all current models
     payload = {
-        "inputs": full_prompt,
-        "parameters": {
-            "max_new_tokens": 1500,
-            "temperature": 0.1,
-            "return_full_text": False
-        }
+        "model": "mistralai/Mistral-7B-Instruct-v0.3",
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ],
+        "max_tokens": 1500,
+        "temperature": 0.1
     }
 
     response = requests.post(
-        "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+        "https://api-inference.huggingface.co/v1/chat/completions",
         headers=headers,
         json=payload,
         timeout=60
@@ -102,11 +98,4 @@ Please generate the Ranked Resistance Report now."""
         raise Exception(f"HuggingFace API error {response.status_code}: {response.text}")
 
     result = response.json()
-
-    # Handle both list and dict response formats
-    if isinstance(result, list):
-        return result[0].get("generated_text", "No response generated.")
-    elif isinstance(result, dict):
-        return result.get("generated_text", str(result))
-    else:
-        return str(result)
+    return result["choices"][0]["message"]["content"]
